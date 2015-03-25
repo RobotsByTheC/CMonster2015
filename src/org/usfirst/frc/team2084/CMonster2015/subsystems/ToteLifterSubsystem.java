@@ -166,7 +166,7 @@ public class ToteLifterSubsystem extends Subsystem {
         /**
          * State when the tote ejector is retracting.
          */
-        RETRACTING(0.3),
+        RETRACTING(0.6),
         /**
          * State when the tote ejector is stopped.
          */
