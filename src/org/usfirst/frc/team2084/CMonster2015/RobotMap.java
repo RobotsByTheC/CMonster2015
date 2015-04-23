@@ -41,7 +41,6 @@ public class RobotMap {
      */
     public static final double DRIVE_SUBSYSTEM_MAX_WHEEL_SPEED = 1.0;
     public static final PIDConstants DRIVE_SUBSYSTEM_WHEEL_SPEED_PID_CONSTANTS = new PIDConstants(0, 0, 0, 1);
-    public static final PIDConstants DRIVE_SUBSYSTEM_HEADING_PID_CONSTANTS = new PIDConstants(0.573, 0, 0);
     public static final PIDConstants DRIVE_SUBSYSTEM_X_LOCATION_PID_CONSTANTS = new PIDConstants(0, 0, 0);
     public static final PIDConstants DRIVE_SUBSYSTEM_Y_LOCATION_PID_CONSTANTS = new PIDConstants(0, 0, 0);
     public static final double DRIVE_SUBSYSTEM_LOCATION_TOLERANCE = 0.1;
@@ -152,8 +151,7 @@ public class RobotMap {
         driveSubsystemRearRightWheel = new DIOEncoderWheelController<>(driveSubsystemRearRightEncoder, DRIVE_SUBSYSTEM_WHEEL_SPEED_PID_CONSTANTS, DRIVE_SUBSYSTEM_MAX_WHEEL_SPEED, new int[] { 13 }, driveSubsystemRearRightJaguar);
         SmartDashboard.putData("Rear Right Wheel", driveSubsystemRearRightWheel);
         driveSubsystemDriveController = new FourWheelDriveController<>(driveSubsystemFrontLeftWheel, driveSubsystemFrontRightWheel, driveSubsystemRearLeftWheel, driveSubsystemRearRightWheel);
-        driveSubsystemMecanumDriveAlgorithm = new EncoderGyroMecanumDriveAlgorithm<>(driveSubsystemDriveController, RobotMap.driveSubsystemGyro,
-                DRIVE_SUBSYSTEM_HEADING_PID_CONSTANTS, DRIVE_SUBSYSTEM_HEADING_TOLERANCE,
+        driveSubsystemMecanumDriveAlgorithm = new EncoderGyroMecanumDriveAlgorithm<>(driveSubsystemDriveController, RobotMap.driveSubsystemGyro, DRIVE_SUBSYSTEM_HEADING_TOLERANCE,
                 DRIVE_SUBSYSTEM_X_LOCATION_PID_CONSTANTS, DRIVE_SUBSYSTEM_Y_LOCATION_PID_CONSTANTS, DRIVE_SUBSYSTEM_LOCATION_TOLERANCE, DRIVE_SUBSYSTEM_LOCATION_TOLERANCE,
                 DRIVE_SUBSYSTEM_DRIVE_BASE_WIDTH, DRIVE_SUBSYSTEM_DRIVE_BASE_LENGTH);
         driveSubsystemArcadeDriveAlgorithm = new ArcadeDriveAlgorithm(driveSubsystemDriveController);

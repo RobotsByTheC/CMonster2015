@@ -6,11 +6,16 @@
  */
 package org.usfirst.frc.team2084.CMonster2015.drive;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+
 import org.usfirst.frc.team2084.CMonster2015.Gyro;
+import org.usfirst.frc.team2084.neuralnetwork.Data;
+import org.usfirst.frc.team2084.neuralnetwork.Data.FormatException;
+import org.usfirst.frc.team2084.neuralnetwork.Network;
+import org.usfirst.frc.team2084.neuralnetwork.TransferFunction;
 
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.PIDController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * A {@link DriveAlgorithm} that uses a {@link FourWheelDriveController} (which
@@ -27,22 +32,23 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends MecanumDriveAlgorithm<S> {
 
     /**
-     * The {@link Gyro} that the {@link GyroMecanumDriveAlgorithm} uses for
-     * field-oriented driving and keeping the correct orientation.
-     */
-    protected final Gyro gyro;
-
-    /**
      * The rotation speed below which the heading PID controller is enabled.
      * When the rotation speed increases above this value the controller is
      * disabled to allow the robot to turn.
      */
-    public final double ROTATION_DEADBAND = 0.05;
+    public static final double ROTATION_DEADBAND = 0.05;
+
+    public static final String HEADING_NETWORK_PATH = "/home/lvuser/heading-network.txt";
+    public static final int[] HEADING_NETWORK_TOPOLOGY = { 2, 3, 1, 1 };
+    public static final double HEADING_NETWORK_ETA = 0.15;
+    public static final double HEADING_NETWORK_MOMENTUM = 0.1;
+    public static final TransferFunction HEADING_NETWORK_TRANSFER_FUNCTION = new TransferFunction.Sigmoid();
 
     /**
-     * The output of the heading PID controller.
+     * The {@link Gyro} that the {@link GyroMecanumDriveAlgorithm} uses for
+     * field-oriented driving and keeping the correct orientation.
      */
-    private volatile double headingPID = 0.0;
+    protected final Gyro gyro;
 
     /**
      * Stores the heading offset used for robot centric driving.
@@ -57,10 +63,13 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     private double headingInverted = 1.0;
 
     /**
-     * PID controller that maintains the orientation of the robot using the
+     * Neural network that maintains the orientation of the robot using the
      * gyro.
      */
-    private final PIDController headingPIDController;
+    private final Network headingNetwork;
+    private boolean headingNetworkEnabled = false;
+    private double headingNetworkSetpoint;
+    private final double headingTolerance;
 
     /**
      * Creates a new {@link GyroMecanumDriveAlgorithm} that controls the
@@ -74,16 +83,29 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @param headingTolerance the tolerance (in radians) to consider as on
      *            target
      */
-    public GyroMecanumDriveAlgorithm(FourWheelDriveController<S> controller, Gyro gyro, PIDConstants headingPIDConstants, double headingTolerance) {
+    public GyroMecanumDriveAlgorithm(FourWheelDriveController<S> controller, Gyro gyro, double headingTolerance) {
         super(controller);
         this.gyro = gyro;
+        this.headingTolerance = headingTolerance;
 
-        headingPIDController = DriveUtils.createPIDControllerFromConstants(headingPIDConstants,
-                this::getHeading, (o) -> headingPID = -o);
-        // (o) -> headingPID = Math.abs(o) > 0.9 ? 0.0 : -o);
-        headingPIDController.setAbsoluteTolerance(headingTolerance);
-        SmartDashboard.putData("Heading PID Controller", headingPIDController);
+        File headingNetworkFile = new File(HEADING_NETWORK_PATH);
 
+        Data headingNetworkData = null;
+        if (headingNetworkFile.canRead()) {
+            try {
+                headingNetworkData = new Data(headingNetworkFile);
+            } catch (FormatException e) {
+                System.err.println("Heading network file contains errors: " + e);
+            } catch (FileNotFoundException e) {
+                System.err.println("Heading network file cannot be found, this shouldn't happen: " + e);
+            }
+        }
+
+        if (headingNetworkData != null) {
+            headingNetwork = headingNetworkData.getNetwork();
+        } else {
+            headingNetwork = new Network(HEADING_NETWORK_TOPOLOGY, HEADING_NETWORK_ETA, HEADING_NETWORK_MOMENTUM, HEADING_NETWORK_TRANSFER_FUNCTION);
+        }
     }
 
     /**
@@ -151,12 +173,14 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @param maxRotationSpeed the maximum speed rotation speed
      */
     public void driveFieldHeadingCartesian(double x, double y, double heading, double maxRotationSpeed) {
-        if (!headingPIDController.isEnable() || headingPIDController.getSetpoint() != heading) {
-            headingPIDController.setSetpoint(heading);
-            headingPIDController.enable();
-        }
-        double headingPIDSign = headingPID > 0 ? 1 : -1;
-        driveFieldCartesianImplNoPID(x, y, Math.abs(headingPID) > maxRotationSpeed ? maxRotationSpeed * headingPIDSign : headingPID, getHeading());
+        headingNetworkEnabled = true;
+        headingNetworkSetpoint = heading;
+        headingNetwork.feedForward(getHeadingError(), maxRotationSpeed);
+        double rotationSpeed = headingNetwork.getResults()[0];
+
+        double rotationSpeedSign = rotationSpeed > 0 ? 1 : -1;
+        driveFieldCartesianImplNoPID(x, y, Math.abs(rotationSpeed) > maxRotationSpeed ? maxRotationSpeed * rotationSpeedSign : rotationSpeed, getHeading());
+
     }
 
     /**
@@ -218,13 +242,14 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @return true when the heading is on target
      */
     public boolean driveFieldHeadingPolar(double magnitude, double direction, double heading, double maxRotationSpeed) {
-        if (!headingPIDController.isEnable() || headingPIDController.getSetpoint() != heading) {
-            headingPIDController.setSetpoint(heading);
-            headingPIDController.enable();
-        }
-        double headingPIDSign = headingPID > 0 ? 1 : -1;
-        driveFieldPolarImplNoPID(magnitude, direction, Math.abs(headingPID) > maxRotationSpeed ? maxRotationSpeed * headingPIDSign : headingPID, getHeading());
-        return headingPIDController.onTarget();
+        headingNetworkEnabled = true;
+        headingNetworkSetpoint = heading;
+        headingNetwork.feedForward(getHeadingError(), maxRotationSpeed);
+        double rotationSpeed = headingNetwork.getResults()[0];
+
+        double rotationSpeedSign = rotationSpeed > 0 ? 1 : -1;
+        driveFieldPolarImplNoPID(magnitude, direction, Math.abs(rotationSpeed) > maxRotationSpeed ? maxRotationSpeed * rotationSpeedSign : rotationSpeed, getHeading());
+        return isHeadingOnTarget();
     }
 
     /**
@@ -314,23 +339,23 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
             // If the controller is already enabled, check to see if it should
             // be disabled or kept running. Otherwise check to see if it needs
             // to be enabled.
-            if (headingPIDController.isEnable()) {
+            if (headingNetworkEnabled) {
                 // If the rotation rate is greater than the deadband disable the
                 // PID controller. Otherwise, return the latest value from the
                 // controller.
                 if (Math.abs(rotationSpeed) >= ROTATION_DEADBAND) {
-                    headingPIDController.disable();
+                    headingNetworkEnabled = false;
                 } else {
-                    return headingPID;
+                    headingNetwork.feedForward(headingNetworkSetpoint, 1.0);
+                    return headingNetwork.getResults()[0];
                 }
             } else {
                 // If the rotation rate is less than the deadband, turn on the
                 // PID controller and set its setpoint to the current angle.
                 if (Math.abs(rotationSpeed) < ROTATION_DEADBAND) {
                     headingOffset = getHeading();
-                    headingPIDController.setSetpoint(headingOffset);
-                    headingPID = 0;
-                    headingPIDController.enable();
+                    headingNetworkSetpoint = headingOffset;
+                    headingNetworkEnabled = true;
                 }
             }
         }
@@ -346,22 +371,13 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     public void resetGyro() {
         // Reset the gyro value to zero
         gyro.reset();
-        // Reset the integral component to zero (which also disables the
-        // controller). This is very important because the integral value will
-        // have gotten really big and will cause the robot to spin in circles
-        // unless it is reset.
-        headingPIDController.reset();
         // Since the gyro value is now zero, the robot should also try to point
         // in that direction.
-        headingPIDController.setSetpoint(0);
-        // Reset the output to 0.
-        headingPID = 0;
-        // Re-enable the controller because it was disabled by calling reset().
-        headingPIDController.enable();
+        headingNetworkSetpoint = 0;
     }
 
     public void resetSetpoint() {
-        headingPIDController.setSetpoint(getHeading());
+        headingNetworkSetpoint = getHeading();
     }
 
     /**
@@ -408,8 +424,8 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @return true if the robot is on target
      */
     public boolean isHeadingOnTarget() {
-        if (headingPIDController.isEnable()) {
-            return headingPIDController.onTarget();
+        if (headingNetworkEnabled) {
+            return Math.abs(getHeadingError()) < headingTolerance;
         } else {
             return true;
         }
@@ -437,6 +453,6 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     }
 
     public double getHeadingError() {
-        return headingPIDController.getError();
+        return headingNetworkSetpoint - getHeading();
     }
 }

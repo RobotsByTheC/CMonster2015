@@ -61,12 +61,11 @@ public class EncoderGyroMecanumDriveAlgorithm<S extends EncoderWheelController<?
      * @param controller the drive controller with encoder wheel controllers
      * @param gyro the gyro to use
      */
-    public EncoderGyroMecanumDriveAlgorithm(FourWheelDriveController<S> controller, Gyro gyro,
-            PIDConstants headingPIDConstants, double headingTolerance,
+    public EncoderGyroMecanumDriveAlgorithm(FourWheelDriveController<S> controller, Gyro gyro, double headingTolerance,
             PIDConstants xLocationPIDConstants, PIDConstants yLocationPIDConstants,
             double xLocationTolerance, double yLocationTolerance,
             double driveBaseWidth, double driveBaseLength) {
-        super(controller, gyro, headingPIDConstants, headingTolerance);
+        super(controller, gyro, headingTolerance);
 
         // Calculate the turning radius of the robot; this is just the
         // pythagorean theorem.
