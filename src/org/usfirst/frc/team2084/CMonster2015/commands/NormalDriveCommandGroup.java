@@ -16,7 +16,8 @@ public class NormalDriveCommandGroup extends CommandGroup {
 
     public NormalDriveCommandGroup() {
         addSequential(new ResetHeadingSetpointCommand());
-        addSequential(new SetGyroEnabledCommand(true));
+        // TODO: change back to true when neural network works
+        addSequential(new SetGyroEnabledCommand(false));
         addSequential(new SetEncodersEnabledCommand(false));
         addSequential(new MecanumDriveCommand());
     }

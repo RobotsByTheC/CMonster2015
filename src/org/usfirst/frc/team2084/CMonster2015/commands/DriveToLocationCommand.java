@@ -43,7 +43,7 @@ public class DriveToLocationCommand extends RotateToCommand {
     }
 
     public DriveToLocationCommand(Location location, double heading, double maxMovementSpeed, double maxRotationSpeed) {
-        this(location, heading, maxMovementSpeed, maxRotationSpeed, 5, false);
+        this(location, heading, maxMovementSpeed, maxRotationSpeed, 5, false, false);
     }
 
     /**
@@ -57,8 +57,8 @@ public class DriveToLocationCommand extends RotateToCommand {
      * @param timeout the max time the robot can take to reach the target
      * @param debug whether to output the location and heading error
      */
-    public DriveToLocationCommand(Location location, double heading, double maxMovementSpeed, double maxRotationSpeed, double timeout, boolean debug) {
-        super(heading, maxRotationSpeed, timeout, debug);
+    public DriveToLocationCommand(Location location, double heading, double maxMovementSpeed, double maxRotationSpeed, double timeout, boolean debug, boolean train) {
+        super(heading, maxRotationSpeed, timeout, debug, train);
 
         addNumberParameter(X_KEY, location.getX());
         addNumberParameter(Y_KEY, location.getY());

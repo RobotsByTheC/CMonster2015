@@ -32,6 +32,6 @@
 	<import file="${wpilib.ant.dir}/build.xml" />
 
 	<!-- Append our vision processing code to the classpath -->
-	<var name="classpath" value="${classpath}:../VisionProcessor2015/dist/VisionProcessor2015.jar:../VisionProcessor2015/lib/opencv-2410.jar" />
+	<var name="classpath" value="${classpath}:../NeuralNetwork/dist/NeuralNetwork.jar:../VisionProcessor2015/dist/VisionProcessor2015.jar:../VisionProcessor2015/lib/opencv-2410.jar" />
 
 </project>
