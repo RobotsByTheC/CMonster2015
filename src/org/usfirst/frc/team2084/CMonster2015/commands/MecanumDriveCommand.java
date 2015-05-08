@@ -8,10 +8,15 @@ package org.usfirst.frc.team2084.CMonster2015.commands;
 
 import org.usfirst.frc.team2084.CMonster2015.Robot;
 import org.usfirst.frc.team2084.CMonster2015.RobotMap;
+import org.usfirst.frc.team2084.CMonster2015.drive.EncoderGyroMecanumDriveAlgorithm;
+import org.usfirst.frc.team2084.CMonster2015.drive.EncoderWheelController;
+import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper;
+import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper.Type;
 import org.usfirst.frc.team2084.CMonster2015.drive.processors.RescalingDeadband;
 import org.usfirst.frc.team2084.CMonster2015.drive.processors.Scaler;
 
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -33,19 +38,32 @@ public class MecanumDriveCommand extends Command {
      * The maximum speed that the robot is allowed to rotate at. The joystick
      * value is scaled down to this value.
      */
-    public static final double MAX_ROTATION = 0.5;
+    public static final double MAX_ROTATE_SPEED = 0.5;
     public static final double MAX_SPEED = 0.75;
+    public static final double MAX_AUTO_ROTATE_SPEED = 0.2;
+    public static final double AUTO_ROTATE_RAMP_RATE = 0.8;
 
     private final RescalingDeadband rotationDeadband = new RescalingDeadband(ROTATION_DEADBAND);
-    private final Scaler rotationScaler = new Scaler(MAX_ROTATION);
+    private final Scaler rotationScaler = new Scaler(MAX_ROTATE_SPEED);
     private final Scaler driveScaler = new Scaler(MAX_SPEED);
+    private final LinearRamper autoRotateRamper = new LinearRamper(AUTO_ROTATE_RAMP_RATE, Type.UP);
+
+    private final EncoderGyroMecanumDriveAlgorithm<EncoderWheelController<SpeedController>> mecanumDriveAlgorithm = RobotMap.driveSubsystemMecanumDriveAlgorithm;
 
     private final boolean fieldOriented;
 
+    /**
+     * Creates a field oriented {@link MecanumDriveCommand}.
+     */
     public MecanumDriveCommand() {
         this(true);
     }
 
+    /**
+     * Creates a field or robot oriented {@link MecanumDriveCommand}.
+     * 
+     * @param fieldOriented whether to use field oriented control
+     */
     public MecanumDriveCommand(boolean fieldOriented) {
         this.fieldOriented = fieldOriented;
         // This command drives, so it requires the drive subsystem.
@@ -56,10 +74,11 @@ public class MecanumDriveCommand extends Command {
     }
 
     /**
-     * Does nothing.
+     * Resets the setpoint of the heading PID controller.
      */
     @Override
     protected void initialize() {
+        mecanumDriveAlgorithm.resetSetpoint();
     }
 
     /**
@@ -89,17 +108,20 @@ public class MecanumDriveCommand extends Command {
             x = driveScaler.process(x);
             y = driveScaler.process(y);
         }
+        // Annoying inversions
         y *= -1;
         scaledRotation *= -1;
         // Actually drive the robot using the joystick values for x and y and
         // the scaled z value.
         if (fieldOriented) {
-            RobotMap.driveSubsystemMecanumDriveAlgorithm.driveFieldCartesian(x, y, scaledRotation);
+            mecanumDriveAlgorithm.driveFieldCartesian(x, y, scaledRotation);
 
-            if (driveJoystick.getPOV() != -1) {
+            int pov = driveJoystick.getPOV();
+            if (pov != -1) {
+                mecanumDriveAlgorithm.driveFieldHeadingCartesian(x, y, Math.toRadians(pov), autoRotateRamper.process(MAX_AUTO_ROTATE_SPEED));
             }
         } else {
-            RobotMap.driveSubsystemMecanumDriveAlgorithm.driveCartesian(x, y, scaledRotation);
+            mecanumDriveAlgorithm.driveCartesian(x, y, scaledRotation);
         }
     }
 
@@ -119,7 +141,7 @@ public class MecanumDriveCommand extends Command {
      */
     @Override
     protected void end() {
-        RobotMap.driveSubsystemMecanumDriveAlgorithm.stop();
+        mecanumDriveAlgorithm.stop();
     }
 
     /**

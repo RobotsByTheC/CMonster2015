@@ -11,21 +11,24 @@ import edu.wpi.first.wpilibj.command.WaitCommand;
 
 /**
  * An autonomous mode that picks up the recycling container from behind and
- * drives over the scoring platform into the auto zone.
+ * drives to the feeder station to prepare to pick up totes.
  * 
  * @author Ben Wolsieffer
  */
-public class ContainerNoodleAutoZoneAutonomousCommand extends CommandGroup {
+public class ContainerFeederStationAutonomousCommand extends CommandGroup {
 
-    public ContainerNoodleAutoZoneAutonomousCommand() {
-        addSequential(new SetHeadingCommand(Math.PI));
-        addSequential(new CloseToteGateCommand());
-        // Raise the tote lifter at the beginning to allow the compressor to
-        // recharge before teleop
-        addParallel(new RaiseContainerHookCommand(1.5));
+    /**
+     * Creates a new {@link ContainerFeederStationAutonomousCommand} that drives
+     * to the specified station.
+     * 
+     * @param left drives to the left feeder station if true
+     */
+    public ContainerFeederStationAutonomousCommand(boolean left) {
+        // Start the container raising.
+        addParallel(new ContainerAutonomousCommand());
         // Wait for the container to get off the ground
         addSequential(new WaitCommand(1));
         // Drive into the auto zone
-        addSequential(new AutoZoneDriveCommand());
+        addSequential(new FeederStationDriveCommandGroup(left));
     }
 }

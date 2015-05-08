@@ -35,8 +35,11 @@ public class RotateToCommand extends ParameterCommand {
     /**
      * The ramper that is used to prevent too much acceleration.
      */
-    protected final LinearRamper rotationRamper = new LinearRamper(1.0, Type.UP);
+    protected final LinearRamper rotationRamper = new LinearRamper(0.5, Type.UP);
 
+    /**
+     * The maximum allowed rotation speed.
+     */
     protected final double maxRotationSpeed;
 
     /**
@@ -80,23 +83,7 @@ public class RotateToCommand extends ParameterCommand {
      * @param timeout the max time the command can take to complete
      */
     public RotateToCommand(double heading, double maxRotationSpeed, double timeout) {
-        this(heading, maxRotationSpeed, timeout, false);
-    }
-
-    /**
-     * Creates a new {@link RotateToCommand} the rotates the robot to the
-     * specified heading and times out after the specified number of seconds.
-     * The timeout is used to prevent the robot from waiting indefinitely if it
-     * turn to the target heading.
-     * 
-     * @param heading the heading to rotate to
-     * @param maxRotationSpeed the maximum speed to rotate
-     * @param timeout the max time the command can take to complete
-     * @param debug whether to print the error to the SmartDashboard
-     */
-    public RotateToCommand(double heading, double maxRotationSpeed,
-            double timeout, boolean debug) {
-        this(heading, maxRotationSpeed, timeout, debug, false);
+        this(heading, maxRotationSpeed, timeout, false, false);
     }
 
     /**
@@ -160,12 +147,11 @@ public class RotateToCommand extends ParameterCommand {
     @Override
     protected boolean isFinished() {
         // TODO: restore condition checking when neural network works
-        return false;// RobotMap.driveSubsystemMecanumDriveAlgorithm.isHeadingOnTarget()
-                     // || isTimedOut();
+        return false; // isTimedOut();
     }
 
     /**
-     * Stops the robot and disable training.
+     * Stops the robot and disables training.
      */
     @Override
     protected void end() {

@@ -65,6 +65,7 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     private double headingInverted = 1.0;
 
     private Data headingNetworkData;
+
     /**
      * Neural network that maintains the orientation of the robot using the
      * gyro.
@@ -361,8 +362,7 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
             if (headingNetworkEnabled) {
                 // If the rotation rate is greater than the deadband disable the
                 // heading controller. Otherwise, return the latest value from
-                // the
-                // controller.
+                // the controller.
                 if (Math.abs(rotationSpeed) >= ROTATION_DEADBAND) {
                     headingNetworkEnabled = false;
                 } else {
@@ -375,7 +375,7 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
                 }
             } else {
                 // If the rotation rate is less than the deadband, turn on the
-                // heading controller and set its setpoint to the current angle.
+                // PID controller and set its setpoint to the current angle.
                 if (Math.abs(rotationSpeed) < ROTATION_DEADBAND) {
                     headingOffset = getHeading();
                     headingNetworkSetpoint = headingOffset;
@@ -394,8 +394,8 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     public void resetGyro() {
         // Reset the gyro value to zero
         gyro.reset();
-        // Since the gyro value is now zero, the robot should also try to point
-        // in that direction.
+        // Reset the integral component to zero (which also disables the
+        // controller). This is very important because the integral value will
         headingNetworkSetpoint = 0;
     }
 
@@ -404,14 +404,32 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     }
 
     /**
-     * Gets the heading of the robot in radians according to the gyro.
+     * Gets the heading of the robot in radians according to the gyro. This also
+     * inverts the value if necessary. This *must* be used to retrieve the gyro
+     * heading rather than calling {@link Gyro#getAngle()} to prevent race
+     * conditions.
      * 
      * @return the heading
      */
     public double getHeading() {
         synchronized (this) {
-            return gyro.getAngle() * headingInverted;
+            return DriveUtils.normalizeHeading(gyro.getAngle() * headingInverted);
         }
+    }
+
+    /**
+     * Sets the heading of the robot. This should be called rather than
+     * {@link Gyro#setAngle(double)} to prevent the robot from trying to rotate
+     * to this new heading, which is generally not the desired behavior.
+     * 
+     * @param heading
+     */
+    public void setHeading(double heading) {
+        synchronized (this) {
+            gyro.setAngle(DriveUtils.normalizeHeading(heading * headingInverted));
+        }
+        // This must not be synchronized to avoid deadlock
+        resetSetpoint();
     }
 
     public double getRotationRate() {
@@ -452,7 +470,7 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      */
     public double getAngularSpeed() {
         synchronized (this) {
-            return gyro.getRate();
+            return gyro.getRate() * headingInverted;
         }
     }
 

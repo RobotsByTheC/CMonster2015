@@ -17,11 +17,19 @@ import edu.wpi.first.wpilibj.command.WaitCommand;
  */
 public class ContainerAutoZoneAutonomousCommand extends CommandGroup {
 
+    /**
+     * Creates a new {@link ContainerAutoZoneAutonomousCommand} that optionally
+     * prepares for noodle loading.
+     * 
+     * @param noodle whether to prepare to load a noodle
+     */
     public ContainerAutoZoneAutonomousCommand() {
+        // Start the container raising sequence.
         addParallel(new ContainerAutonomousCommand());
+
         // Wait for the container to get off the ground
         addSequential(new WaitCommand(1));
         // Drive into the auto zone
-        addSequential(new AutoZoneDriveCommand());
+        addSequential(new AutoZoneDriveCommandGroup());
     }
 }

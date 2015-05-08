@@ -15,10 +15,12 @@ import edu.wpi.first.wpilibj.command.CommandGroup;
 public class NormalDriveCommandGroup extends CommandGroup {
 
     public NormalDriveCommandGroup() {
-        addSequential(new ResetHeadingSetpointCommand());
+        // Enable gyro
         // TODO: change back to true when neural network works
         addSequential(new SetGyroEnabledCommand(false));
+        // Enable encoders
         addSequential(new SetEncodersEnabledCommand(false));
+        // Start field oriented mecanum drive control
         addSequential(new MecanumDriveCommand());
     }
 }
