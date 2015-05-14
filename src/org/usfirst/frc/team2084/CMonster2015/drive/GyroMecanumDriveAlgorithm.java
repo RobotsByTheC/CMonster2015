@@ -438,14 +438,28 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
         }
     }
 
+    /**
+     * Sets whether the neural network should train itself.
+     * 
+     * @param enabled whether training should be enabled
+     */
     public void setTrainingEnabled(boolean enabled) {
         headingNetworkTrainingEnabled = enabled;
     }
 
+    /**
+     * Gets whether neural network training is enabled.
+     * 
+     * @return true if the network is enabled
+     */
     public boolean isTrainingEnabled() {
         return headingNetworkTrainingEnabled;
     }
 
+    /**
+     * Saves the state of the neural network. This should be called whenever
+     * training finishes.
+     */
     public void saveTraining() {
         try {
             headingNetworkData.save(new File(HEADING_NETWORK_PATH));
@@ -511,5 +525,14 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
 
     public double getHeadingError() {
         return headingNetworkSetpoint - getHeading();
+    }
+
+    /**
+     * Gets the most recent back-propagation error from the neural network.
+     * 
+     * @return the back-propagation error
+     */
+    public double getBackPropagationError() {
+        return headingNetwork.getRecentAverageError();
     }
 }

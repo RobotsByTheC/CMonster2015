@@ -8,9 +8,12 @@ package org.usfirst.frc.team2084.CMonster2015.commands;
 
 import org.usfirst.frc.team2084.CMonster2015.Robot;
 import org.usfirst.frc.team2084.CMonster2015.RobotMap;
+import org.usfirst.frc.team2084.CMonster2015.drive.EncoderGyroMecanumDriveAlgorithm;
+import org.usfirst.frc.team2084.CMonster2015.drive.EncoderWheelController;
 import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper;
 import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper.Type;
 
+import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
@@ -24,6 +27,7 @@ public class RotateToCommand extends ParameterCommand {
     public static final String DEBUG_KEY = "Debug";
     public static final String TRAIN_KEY = "Train";
     public static final String HEADING_ERROR_KEY = "Heading Error";
+    public static final String BACK_PROPAGATION_ERROR_KEY = "Back-propagation Error";
 
     protected boolean debug;
     protected boolean train;
@@ -132,10 +136,12 @@ public class RotateToCommand extends ParameterCommand {
      */
     @Override
     protected void execute() {
-        RobotMap.driveSubsystemMecanumDriveAlgorithm.driveFieldHeadingCartesian(0, 0, heading, rotationRamper.process(maxRotationSpeed));
+        EncoderGyroMecanumDriveAlgorithm<EncoderWheelController<SpeedController>> drive = RobotMap.driveSubsystemMecanumDriveAlgorithm;
+        drive.driveFieldHeadingCartesian(0, 0, heading, rotationRamper.process(maxRotationSpeed));
 
         if (debug) {
-            SmartDashboard.putNumber(HEADING_ERROR_KEY, RobotMap.driveSubsystemMecanumDriveAlgorithm.getHeadingError());
+            SmartDashboard.putNumber(BACK_PROPAGATION_ERROR_KEY, drive.getBackPropagationError());
+            SmartDashboard.putNumber(HEADING_ERROR_KEY, drive.getHeadingError());
         }
     }
 
