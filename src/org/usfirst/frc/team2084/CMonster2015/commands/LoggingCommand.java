@@ -10,10 +10,8 @@ import org.usfirst.frc.team2084.CMonster2015.Robot;
 import org.usfirst.frc.team2084.CMonster2015.RobotMap;
 import org.usfirst.frc.team2084.CMonster2015.drive.EncoderGyroMecanumDriveAlgorithm;
 import org.usfirst.frc.team2084.CMonster2015.drive.EncoderWheelController;
-import org.usfirst.frc.team2084.CMonster2015.drive.Location;
 
 import edu.wpi.first.wpilibj.SpeedController;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.interfaces.Accelerometer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -55,11 +53,6 @@ public class LoggingCommand extends Command {
     @Override
     protected void execute() {
 
-        // Send location
-        Location location = mecanumDriveAlgorithm.getLocation();
-        SmartDashboard.putNumber("X Location", location.getX());
-        SmartDashboard.putNumber("Y Location", location.getY());
-
         // Report gyro values
         SmartDashboard.putNumber("Gyro Angle", mecanumDriveAlgorithm.getHeading());
         SmartDashboard.putNumber("Gyro Rate", mecanumDriveAlgorithm.getRotationRate());
@@ -68,19 +61,12 @@ public class LoggingCommand extends Command {
         SmartDashboard.putNumber("X Acceleration", accelerometer.getX());
         SmartDashboard.putNumber("Y Acceleration", accelerometer.getY());
 
-        // Report remaining match time
-        double matchTime = Timer.getMatchTime();
-        SmartDashboard.putNumber("Time Remaining", matchTime < 0 ? 0 : matchTime);
-
         // Report energy and current
         SmartDashboard.putNumber("Total energy (J)", Robot.pdp.getTotalEnergy());
         SmartDashboard.putNumber("Total current (amps)", Robot.pdp.getTotalCurrent());
 
         // Report sensors
         SmartDashboard.putBoolean("Container Hook Raised", Robot.containerHookSubsystem.isRaised());
-
-        SmartDashboard.putBoolean("Left Lifter Lowered", Robot.toteLifterSubsystem.isLeftLifterLowered());
-        SmartDashboard.putBoolean("Right Lifter Lowered", Robot.toteLifterSubsystem.isRightLifterLowered());
 
     }
 
