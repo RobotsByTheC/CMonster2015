@@ -376,7 +376,7 @@ Children:
           default: '1'
           name: Button
           validators: null
-          value: '9'
+          value: '10'
         Command: !!robotbuilder.data.properties.TypeSelectionProperty
           default: None
           name: Command

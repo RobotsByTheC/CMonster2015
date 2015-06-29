@@ -8,18 +8,37 @@ package org.usfirst.frc.team2084.CMonster2015.commands;
 
 import org.usfirst.frc.team2084.CMonster2015.Robot;
 import org.usfirst.frc.team2084.CMonster2015.RobotMap;
+import org.usfirst.frc.team2084.CMonster2015.drive.DriveUtils;
+import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper;
+import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper.Type;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
- * Command that drives in arcade drive mode. This isn't used so it might not
- * work.
+ * Command that drives in arcade drive mode. This has been modified to support
+ * cruise control.
  *
  * @author Ben Wolsieffer
  */
 public class ArcadeDriveCommand extends Command {
+
+    /**
+     * The amount to increment the cruise speed by each time the button is
+     * pressed.
+     */
+    public static final double CRUISE_INCREMENT = 0.1;
+
+    private boolean cruiseIncreasePressed;
+    private boolean cruiseDecreasePressed;
+
+    private boolean cruiseEnabled;
+    private double cruiseSpeed;
+
+    /**
+     * Used to provide smooth transitions between cruise speeds.
+     */
+    private final LinearRamper cruiseRamper = new LinearRamper(1, Type.UP_DOWN);
 
     public ArcadeDriveCommand() {
         // This command drives, so it requires the drive subsystem.
@@ -34,6 +53,8 @@ public class ArcadeDriveCommand extends Command {
      */
     @Override
     protected void initialize() {
+        cruiseSpeed = 0;
+        cruiseEnabled = false;
     }
 
     /**
@@ -43,12 +64,50 @@ public class ArcadeDriveCommand extends Command {
     @Override
     protected void execute() {
         Joystick j = Robot.oi.getController();
-        double x = j.getX();
         // Use the second joystick to rotate the robot.
-        double y = j.getZ();
-        SmartDashboard.putNumber("Joystick X", x);
-        SmartDashboard.putNumber("Joystick Y", y);
-        RobotMap.driveSubsystemArcadeDriveAlgorithm.arcadeDrive(-y, x);
+        double rotate = j.getZ();
+        double joySpeed = -j.getY();
+
+        // Handle cruise increment button
+        if (j.getPOV() == 0) {
+            if (!cruiseIncreasePressed) {
+                cruiseIncreasePressed = true;
+                cruiseEnabled = true;
+                cruiseSpeed += CRUISE_INCREMENT;
+            }
+        } else {
+            cruiseIncreasePressed = false;
+        }
+
+        // Handle cruise decrement button
+        if (j.getPOV() == 180) {
+            if (!cruiseDecreasePressed) {
+                cruiseDecreasePressed = true;
+                cruiseEnabled = true;
+                cruiseSpeed -= CRUISE_INCREMENT;
+            }
+        } else {
+            cruiseDecreasePressed = false;
+        }
+
+        // Make sure cruise speed stays within bounds
+        cruiseSpeed = DriveUtils.limit(cruiseSpeed);
+
+        if (Robot.oi.cruiseDisableButton.get()) {
+            cruiseEnabled = false;
+        }
+
+        // Ramp the cruise speed to prevent abrupt changes in speed
+        double speed = cruiseRamper.process(cruiseSpeed);
+
+        // If the joystick speed is faster than the cruise speed (accounting for
+        // ramping), allow it to take control
+        if (!cruiseEnabled || (speed > 0 && (joySpeed > speed))
+                || (speed < 0 && (joySpeed < speed))) {
+            speed = joySpeed;
+        }
+
+        RobotMap.driveSubsystemArcadeDriveAlgorithm.arcadeDrive(speed, rotate);
     }
 
     /**
