@@ -42,9 +42,10 @@ public class ArcadeDriveCommand extends Command {
      */
     @Override
     protected void execute() {
-        Joystick j = Robot.oi.getDriveJoystick();
+        Joystick j = Robot.oi.getController();
         double x = j.getX();
-        double y = j.getY();
+        // Use the second joystick to rotate the robot.
+        double y = j.getZ();
         SmartDashboard.putNumber("Joystick X", x);
         SmartDashboard.putNumber("Joystick Y", y);
         RobotMap.driveSubsystemArcadeDriveAlgorithm.arcadeDrive(-y, x);

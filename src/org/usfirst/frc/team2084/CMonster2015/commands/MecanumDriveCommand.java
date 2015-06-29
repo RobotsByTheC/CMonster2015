@@ -87,7 +87,7 @@ public class MecanumDriveCommand extends Command {
     @Override
     protected void execute() {
         // This is the joystick that we use as input for driving.
-        Joystick driveJoystick = Robot.oi.getDriveJoystick();
+        Joystick driveJoystick = Robot.oi.getController();
         // Store the axis values.
         double x = driveJoystick.getX();
         double y = driveJoystick.getY(); // Forward is negative on joysticks

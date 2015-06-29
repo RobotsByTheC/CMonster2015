@@ -203,7 +203,7 @@ Children:
       Name: Rear Right Encoder
     Properties:
       Default Command: !!robotbuilder.data.properties.TypeSelectionProperty {default: None,
-        name: Default Command, type: Command, validators: null, value: Normal Drive Command Group}
+        name: Default Command, type: Command, validators: null, value: Arcade Drive Command}
     Base: Subsystem
     Name: Drive Subsystem
   - Children:
@@ -369,7 +369,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Drive Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: &id016 ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11',
             '12', '13', '14', '15', '16']
@@ -382,57 +382,9 @@ Children:
           name: Command
           type: Command
           validators: &id017 [TypeDropdownSelected]
-          value: Normal Drive Command Group
-        When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: &id018 [whileHeld, whenPressed, whenReleased]
-          default: whileHeld
-          name: When to Run
-          validators: null
-          value: whenPressed
-      Base: Joystick Button
-      Name: Normal Drive Button
-    - Children: []
-      Properties:
-        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Drive Joystick}
-        Button: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id016
-          default: '1'
-          name: Button
-          validators: null
-          value: '10'
-        Command: !!robotbuilder.data.properties.TypeSelectionProperty
-          default: None
-          name: Command
-          type: Command
-          validators: *id017
-          value: Fallback Drive Command Group
-        When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id018
-          default: whileHeld
-          name: When to Run
-          validators: null
-          value: whenPressed
-      Base: Joystick Button
-      Name: Fallback Drive Button
-    - Children: []
-      Properties:
-        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Drive Joystick}
-        Button: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id016
-          default: '1'
-          name: Button
-          validators: null
-          value: '12'
-        Command: !!robotbuilder.data.properties.TypeSelectionProperty
-          default: None
-          name: Command
-          type: Command
-          validators: *id017
           value: Reset Gyro Command
         When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id018
+          choices: &id018 [whileHeld, whenPressed, whenReleased]
           default: whileHeld
           name: When to Run
           validators: null
@@ -442,65 +394,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Drive Joystick}
-        Button: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id016
-          default: '1'
-          name: Button
-          validators: null
-          value: '6'
-        Command: !!robotbuilder.data.properties.TypeSelectionProperty
-          default: None
-          name: Command
-          type: Command
-          validators: *id017
-          value: Extend Tote Ejector Command
-        When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id018
-          default: whileHeld
-          name: When to Run
-          validators: null
-          value: whileHeld
-      Base: Joystick Button
-      Name: Extend Tote Ejector Button
-    - Children: []
-      Properties:
-        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Drive Joystick}
-        Button: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id016
-          default: '1'
-          name: Button
-          validators: null
-          value: '5'
-        Command: !!robotbuilder.data.properties.TypeSelectionProperty
-          default: None
-          name: Command
-          type: Command
-          validators: *id017
-          value: Retract Tote Ejector Command
-        When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id018
-          default: whileHeld
-          name: When to Run
-          validators: null
-          value: whileHeld
-      Base: Joystick Button
-      Name: Retract Tote Ejector Button
-    Properties:
-      Number: !!robotbuilder.data.properties.ChoicesProperty
-        choices: &id019 ['0', '1', '2', '3', '4', '5']
-        default: 1
-        name: Number
-        validators: &id020 [Joystick]
-        value: '0'
-    Base: Joystick
-    Name: Drive Joystick
-  - Children:
-    - Children: []
-      Properties:
-        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Secondary Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: *id016
           default: '1'
@@ -524,7 +418,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Secondary Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: *id016
           default: '1'
@@ -548,7 +442,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Secondary Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: *id016
           default: '1'
@@ -572,7 +466,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Secondary Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: *id016
           default: '1'
@@ -596,7 +490,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Secondary Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: *id016
           default: '1'
@@ -620,7 +514,7 @@ Children:
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Secondary Joystick}
+          name: Joystick, validators: null, value: Controller}
         Button: !!robotbuilder.data.properties.ChoicesProperty
           choices: *id016
           default: '1'
@@ -641,15 +535,63 @@ Children:
           value: whenPressed
       Base: Joystick Button
       Name: Open Tote Gate Button
+    - Children: []
+      Properties:
+        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
+          name: Joystick, validators: null, value: Controller}
+        Button: !!robotbuilder.data.properties.ChoicesProperty
+          choices: *id016
+          default: '1'
+          name: Button
+          validators: null
+          value: '3'
+        Command: !!robotbuilder.data.properties.TypeSelectionProperty
+          default: None
+          name: Command
+          type: Command
+          validators: *id017
+          value: Extend Tote Ejector Command
+        When to Run: !!robotbuilder.data.properties.ChoicesProperty
+          choices: *id018
+          default: whileHeld
+          name: When to Run
+          validators: null
+          value: whileHeld
+      Base: Joystick Button
+      Name: Extend Tote Ejector Button
+    - Children: []
+      Properties:
+        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
+          name: Joystick, validators: null, value: Controller}
+        Button: !!robotbuilder.data.properties.ChoicesProperty
+          choices: *id016
+          default: '1'
+          name: Button
+          validators: null
+          value: '1'
+        Command: !!robotbuilder.data.properties.TypeSelectionProperty
+          default: None
+          name: Command
+          type: Command
+          validators: *id017
+          value: Retract Tote Ejector Command
+        When to Run: !!robotbuilder.data.properties.ChoicesProperty
+          choices: *id018
+          default: whileHeld
+          name: When to Run
+          validators: null
+          value: whileHeld
+      Base: Joystick Button
+      Name: Retract Tote Ejector Button
     Properties:
       Number: !!robotbuilder.data.properties.ChoicesProperty
-        choices: *id019
+        choices: ['0', '1', '2', '3', '4', '5']
         default: 1
         name: Number
-        validators: *id020
-        value: '1'
+        validators: [Joystick]
+        value: '0'
     Base: Joystick
-    Name: Secondary Joystick
+    Name: Controller
   Properties: {}
   Base: OI
   Name: Operator Interface
