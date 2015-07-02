@@ -55,6 +55,7 @@ public class ArcadeDriveCommand extends Command {
     protected void initialize() {
         cruiseSpeed = 0;
         cruiseEnabled = false;
+        cruiseRamper.reset();
     }
 
     /**
@@ -95,6 +96,8 @@ public class ArcadeDriveCommand extends Command {
 
         if (Robot.oi.cruiseDisableButton.get()) {
             cruiseEnabled = false;
+            cruiseSpeed = 0;
+            cruiseRamper.reset();
         }
 
         // Ramp the cruise speed to prevent abrupt changes in speed
