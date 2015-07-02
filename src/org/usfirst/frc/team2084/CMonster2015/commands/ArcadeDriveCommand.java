@@ -12,6 +12,7 @@ import org.usfirst.frc.team2084.CMonster2015.drive.DriveUtils;
 import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper;
 import org.usfirst.frc.team2084.CMonster2015.drive.processors.LinearRamper.Type;
 
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.command.Command;
 
@@ -66,8 +67,8 @@ public class ArcadeDriveCommand extends Command {
     protected void execute() {
         Joystick j = Robot.oi.getController();
         // Use the second joystick to rotate the robot.
-        double rotate = j.getZ();
-        double joySpeed = -j.getY();
+        double rotate = j.getX(Hand.kRight);
+        double joySpeed = -j.getY(Hand.kLeft);
 
         // Handle cruise increment button
         if (j.getPOV() == 0) {

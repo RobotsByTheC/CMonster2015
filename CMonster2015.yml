@@ -424,7 +424,7 @@ Children:
           default: '1'
           name: Button
           validators: null
-          value: '7'
+          value: '6'
         Command: !!robotbuilder.data.properties.TypeSelectionProperty
           default: None
           name: Command
@@ -439,54 +439,6 @@ Children:
           value: whenPressed
       Base: Joystick Button
       Name: Lower Tote Lifter Button
-    - Children: []
-      Properties:
-        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Controller}
-        Button: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id016
-          default: '1'
-          name: Button
-          validators: null
-          value: '6'
-        Command: !!robotbuilder.data.properties.TypeSelectionProperty
-          default: None
-          name: Command
-          type: Command
-          validators: *id017
-          value: Raise Container Hook Command
-        When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id018
-          default: whileHeld
-          name: When to Run
-          validators: null
-          value: whileHeld
-      Base: Joystick Button
-      Name: Raise Container Hook Button
-    - Children: []
-      Properties:
-        Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
-          name: Joystick, validators: null, value: Controller}
-        Button: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id016
-          default: '1'
-          name: Button
-          validators: null
-          value: '8'
-        Command: !!robotbuilder.data.properties.TypeSelectionProperty
-          default: None
-          name: Command
-          type: Command
-          validators: *id017
-          value: Lower Container Hook Command
-        When to Run: !!robotbuilder.data.properties.ChoicesProperty
-          choices: *id018
-          default: whileHeld
-          name: When to Run
-          validators: null
-          value: whileHeld
-      Base: Joystick Button
-      Name: Lower Container Hook Button
     - Children: []
       Properties:
         Joystick: !!robotbuilder.data.properties.ParentProperty {default: parent,
@@ -520,7 +472,7 @@ Children:
           default: '1'
           name: Button
           validators: null
-          value: '2'
+          value: '1'
         Command: !!robotbuilder.data.properties.TypeSelectionProperty
           default: None
           name: Command
@@ -544,7 +496,7 @@ Children:
           default: '1'
           name: Button
           validators: null
-          value: '3'
+          value: '2'
         Command: !!robotbuilder.data.properties.TypeSelectionProperty
           default: None
           name: Command
@@ -568,7 +520,7 @@ Children:
           default: '1'
           name: Button
           validators: null
-          value: '1'
+          value: '3'
         Command: !!robotbuilder.data.properties.TypeSelectionProperty
           default: None
           name: Command
