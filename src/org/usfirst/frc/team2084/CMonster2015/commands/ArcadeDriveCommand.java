@@ -27,7 +27,7 @@ public class ArcadeDriveCommand extends Command {
      * The amount to increment the cruise speed by each time the button is
      * pressed.
      */
-    public static final double CRUISE_INCREMENT = 0.1;
+    public static final double CRUISE_INCREMENT = 0.05;
 
     private boolean cruiseIncreasePressed;
     private boolean cruiseDecreasePressed;
