@@ -36,7 +36,8 @@ public abstract class DataRecordingCommand extends Command {
         dataDirectory = new File(dataName);
         if (dataDirectory.exists()) {
             if (!dataDirectory.isDirectory()) {
-                throw new IllegalArgumentException("Data name cannot be the name of an existing file in " + DATA_PATH);
+                throw new IllegalArgumentException("Data name cannot be the name of an existing file in "
+                        + DATA_PATH);
             }
         } else {
             if (!dataDirectory.mkdirs()) {
@@ -52,7 +53,8 @@ public abstract class DataRecordingCommand extends Command {
     protected void initialize() {
         try {
             String fileName = dateFormat.format(new Date()) + ".csv";
-            writer = AsynchronousFileChannel.open(Paths.get(DATA_PATH, dataName, fileName), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            writer = AsynchronousFileChannel.open(Paths.get(DATA_PATH, dataName, fileName),
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
         } catch (IOException e) {
             System.err.println("Could not open data file for writing or file already exists.");
         }
