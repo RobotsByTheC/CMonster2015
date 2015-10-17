@@ -6,18 +6,11 @@
  */
 package org.usfirst.frc.team2084.CMonster2015.drive;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 import org.usfirst.frc.team2084.CMonster2015.Gyro;
-import org.usfirst.frc.team2084.neuralnetwork.Data;
-import org.usfirst.frc.team2084.neuralnetwork.Data.FormatException;
-import org.usfirst.frc.team2084.neuralnetwork.Network;
-import org.usfirst.frc.team2084.neuralnetwork.Neuron;
-import org.usfirst.frc.team2084.neuralnetwork.TransferFunction;
 
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * A {@link DriveAlgorithm} that uses a {@link FourWheelDriveController} (which
@@ -34,23 +27,22 @@ import edu.wpi.first.wpilibj.GenericHID;
 public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends MecanumDriveAlgorithm<S> {
 
     /**
-     * The rotation speed below which the heading controller is enabled. When
-     * the rotation speed increases above this value the controller is disabled
-     * to allow the robot to turn.
-     */
-    public static final double ROTATION_DEADBAND = 0.05;
-
-    public static final String HEADING_NETWORK_PATH = "/home/lvuser/GyroMecanumDriveAlgorithm.headingNetwork.txt";
-    public static final int[] HEADING_NETWORK_TOPOLOGY = { 2, 3, 1, 1 };
-    public static final double HEADING_NETWORK_ETA = 0.15;
-    public static final double HEADING_NETWORK_MOMENTUM = 0.05;
-    public static final TransferFunction HEADING_NETWORK_TRANSFER_FUNCTION = new TransferFunction.HyperbolicTangent();
-
-    /**
      * The {@link Gyro} that the {@link GyroMecanumDriveAlgorithm} uses for
      * field-oriented driving and keeping the correct orientation.
      */
     protected final Gyro gyro;
+
+    /**
+     * The rotation speed below which the heading PID controller is enabled.
+     * When the rotation speed increases above this value the controller is
+     * disabled to allow the robot to turn.
+     */
+    public final double ROTATION_DEADBAND = 0.05;
+
+    /**
+     * The output of the heading PID controller.
+     */
+    private volatile double headingPID = 0.0;
 
     /**
      * Stores the heading offset used for robot centric driving.
@@ -64,19 +56,11 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
 
     private double headingInverted = 1.0;
 
-    private Data headingNetworkData;
-
     /**
-     * Neural network that maintains the orientation of the robot using the
+     * PID controller that maintains the orientation of the robot using the
      * gyro.
      */
-    private final Network headingNetwork;
-    private final Neuron headingNetworkOutputNeuron;
-    private final Neuron headingNetworkRotationSpeedNeuron;
-    private boolean headingNetworkEnabled = false;
-    private boolean headingNetworkTrainingEnabled = false;
-    private double headingNetworkSetpoint;
-    private final double headingTolerance;
+    private final PIDController headingPIDController;
 
     /**
      * Creates a new {@link GyroMecanumDriveAlgorithm} that controls the
@@ -85,35 +69,24 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @param controller the {@link FourWheelDriveController} to control
      * @param gyro the {@link SynchronizedRadianGyro} to use for orientation
      *            correction and field-oriented driving
+     * @param headingPIDConstants the {@link PIDConstants} to use for heading
+     *            control
      * @param headingTolerance the tolerance (in radians) to consider as on
      *            target
      */
-    public GyroMecanumDriveAlgorithm(FourWheelDriveController<S> controller, Gyro gyro, double headingTolerance) {
+    public GyroMecanumDriveAlgorithm(FourWheelDriveController<S> controller, Gyro gyro,
+            PIDConstants headingPIDConstants, double headingTolerance) {
         super(controller);
         this.gyro = gyro;
-        this.headingTolerance = headingTolerance;
 
-        File headingNetworkFile = new File(HEADING_NETWORK_PATH);
+        headingPIDController = DriveUtils.createPIDControllerFromConstants(headingPIDConstants,
+                this::getHeading, (o) -> headingPID = -o);
+        // (o) -> headingPID = Math.abs(o) > 0.9 ? 0.0 : -o);
+        headingPIDController.setAbsoluteTolerance(headingTolerance);
+        headingPIDController.setInputRange(-Math.PI, Math.PI);
+        headingPIDController.setContinuous(true);
+        SmartDashboard.putData("Heading PID Controller", headingPIDController);
 
-        if (headingNetworkFile.canRead()) {
-            try {
-                headingNetworkData = new Data(headingNetworkFile);
-            } catch (FormatException e) {
-                System.err.println("Heading network file contains errors: " + e);
-            } catch (FileNotFoundException e) {
-                System.err.println("Heading network file cannot be found, this shouldn't happen: " + e);
-            }
-        }
-
-        if (headingNetworkData != null) {
-            headingNetwork = headingNetworkData.getNetwork();
-        } else {
-            headingNetwork = new Network(HEADING_NETWORK_TOPOLOGY, HEADING_NETWORK_ETA, HEADING_NETWORK_MOMENTUM, HEADING_NETWORK_TRANSFER_FUNCTION);
-            headingNetworkData = new Data(headingNetwork);
-        }
-
-        headingNetworkOutputNeuron = headingNetwork.getLayer(headingNetwork.getTotalLayers() - 1)[0];
-        headingNetworkRotationSpeedNeuron = headingNetwork.getLayer(headingNetwork.getTotalLayers() - 2)[0];
     }
 
     /**
@@ -122,7 +95,7 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      */
     @Override
     public void driveCartesian(double x, double y, double rotation) {
-        driveFieldCartesianImplCorrection(x, y, rotation, getHeading() - headingOffset);
+        driveFieldCartesianImplPID(x, y, rotation, getHeading() - headingOffset);
     }
 
     /**
@@ -146,7 +119,7 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      *            clockwise, positive = counterclockwise)
      */
     public void driveFieldCartesian(double x, double y, double rotation) {
-        driveFieldCartesianImplCorrection(x, y, rotation, getHeading());
+        driveFieldCartesianImplPID(x, y, rotation, getHeading());
     }
 
     /**
@@ -180,13 +153,22 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @param heading the heading to maintain
      * @param maxRotationSpeed the maximum speed rotation speed
      */
-    public void driveFieldHeadingCartesian(double x, double y, double heading, double maxRotationSpeed) {
-        driveFieldCartesianImplNoCorrection(x, y, getHeadingCorrection(heading, maxRotationSpeed), getHeading());
+    public void driveFieldHeadingCartesian(double x, double y, double heading,
+            double maxRotationSpeed) {
+        if (!headingPIDController.isEnable() || headingPIDController.getSetpoint() != heading) {
+            headingPIDController.setSetpoint(heading);
+            headingPIDController.enable();
+        }
+        double headingPIDSign = headingPID > 0 ? 1 : -1;
+        driveFieldCartesianImplNoPID(x, y,
+                Math.abs(headingPID) > maxRotationSpeed ? maxRotationSpeed
+                        * headingPIDSign : headingPID,
+                getHeading());
     }
 
     /**
      * Private implementation of field-oriented cartesian mecanum driving that
-     * accounts for heading correction.
+     * accounts for PID heading correction.
      *
      * @param x the forward speed (negative = backward, positive = forward)
      * @param y the sideways (crab) speed (negative = left, positive = right)
@@ -194,14 +176,14 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      *            clockwise, positive = counterclockwise)
      * @param gyroAngle the current angle reading from the gyro
      */
-    private void driveFieldCartesianImplCorrection(double x, double y, double rotation, double gyroAngle) {
-        rotation = getRotationCorrection(rotation);
-        driveFieldCartesianImplNoCorrection(x, y, rotation, gyroAngle);
+    private void driveFieldCartesianImplPID(double x, double y, double rotation, double gyroAngle) {
+        rotation = getRotationPID(rotation);
+        driveFieldCartesianImplNoPID(x, y, rotation, gyroAngle);
     }
 
     /**
      * Private implementation of field-oriented cartesian mecanum driving that
-     * does not account for heading correction.
+     * does not account for PID heading correction.
      *
      * @param x the forward speed (negative = backward, positive = forward)
      * @param y the sideways (crab) speed (negative = left, positive = right)
@@ -209,7 +191,8 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      *            clockwise, positive = counterclockwise)
      * @param gyroAngle the current angle reading from the gyro
      */
-    private void driveFieldCartesianImplNoCorrection(double x, double y, double rotation, double gyroAngle) {
+    private void driveFieldCartesianImplNoPID(double x, double y, double rotation,
+            double gyroAngle) {
         // Compensate for gyro angle.
         double rotated[] = DriveUtils.rotateVector(x, y, gyroAngle);
         x = rotated[0];
@@ -242,9 +225,18 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @param maxRotationSpeed the maximum speed rotation speed
      * @return true when the heading is on target
      */
-    public boolean driveFieldHeadingPolar(double magnitude, double direction, double heading, double maxRotationSpeed) {
-        driveFieldPolarImplNoCorrection(magnitude, direction, getHeadingCorrection(heading, maxRotationSpeed), getHeading());
-        return isHeadingOnTarget();
+    public boolean driveFieldHeadingPolar(double magnitude, double direction, double heading,
+            double maxRotationSpeed) {
+        if (!headingPIDController.isEnable() || headingPIDController.getSetpoint() != heading) {
+            headingPIDController.setSetpoint(heading);
+            headingPIDController.enable();
+        }
+        double headingPIDSign = headingPID > 0 ? 1 : -1;
+        driveFieldPolarImplNoPID(magnitude, direction,
+                Math.abs(headingPID) > maxRotationSpeed ? maxRotationSpeed
+                        * headingPIDSign : headingPID,
+                getHeading());
+        return headingPIDController.onTarget();
     }
 
     /**
@@ -274,12 +266,12 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      *            independent of the magnitude or direction. [-1.0..1.0]
      */
     public void driveFieldPolar(double magnitude, double direction, double rotation) {
-        driveFieldPolarImplCorrection(magnitude, direction, rotation, getHeading());
+        driveFieldPolarImplPID(magnitude, direction, rotation, getHeading());
     }
 
     /**
      * Private implementation of field-oriented polar mecanum driving that
-     * accounts for heading correction.
+     * accounts for PID heading correction.
      *
      * @param magnitude the speed that the robot should drive in a given
      *            direction.
@@ -289,14 +281,15 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      *            independent of the magnitude or direction. [-1.0..1.0]
      * @param gyroAngle the current angle reading from the gyro
      */
-    private void driveFieldPolarImplCorrection(double magnitude, double direction, double rotation, double gyroAngle) {
-        rotation = getRotationCorrection(rotation);
-        driveFieldPolarImplNoCorrection(magnitude, direction, rotation, gyroAngle);
+    private void driveFieldPolarImplPID(double magnitude, double direction, double rotation,
+            double gyroAngle) {
+        rotation = getRotationPID(rotation);
+        driveFieldPolarImplNoPID(magnitude, direction, rotation, gyroAngle);
     }
 
     /**
      * Private implementation of field-oriented polar mecanum driving that does
-     * not account for heading correction.
+     * not account for PID heading correction.
      *
      * @param magnitude the speed that the robot should drive in a given
      *            direction.
@@ -306,7 +299,8 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      *            independent of the magnitude or direction. [-1.0..1.0]
      * @param gyroAngle the current angle reading from the gyro
      */
-    private void driveFieldPolarImplNoCorrection(double magnitude, double direction, double rotation, double gyroAngle) {
+    private void driveFieldPolarImplNoPID(double magnitude, double direction, double rotation,
+            double gyroAngle) {
         direction += gyroAngle;
         drivePolar(magnitude, direction, rotation);
     }
@@ -322,64 +316,35 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     }
 
     /**
-     * Gets the proper rotation speed to face the robot to the specified
-     * heading.
-     * 
-     * @param heading
-     * @param maxRotationSpeed
-     * @return
-     */
-    private double getHeadingCorrection(double heading, double maxRotationSpeed) {
-        headingNetworkEnabled = true;
-        headingNetworkSetpoint = heading;
-        if (headingNetworkTrainingEnabled) {
-            headingNetworkOutputNeuron.setOutputValue(getHeadingError());
-            headingNetwork.backPropagation(0);
-            System.out.println("training!!!");
-            System.out.println("error: " + headingNetwork.getRecentAverageError());
-        }
-        headingNetwork.feedForward(getHeadingError(), maxRotationSpeed);
-
-        double rotationSpeed = -headingNetworkRotationSpeedNeuron.getOutputValue();
-
-        double rotationSpeedSign = rotationSpeed > 0 ? 1 : -1;
-        return Math.abs(rotationSpeed) > maxRotationSpeed ? maxRotationSpeed * rotationSpeedSign : rotationSpeed;
-    }
-
-    /**
      * Gets the corrected rotation speed based on the gyro heading and the
      * expected rate of rotation. If the rotation rate is above a threshold, the
      * gyro correction is turned off.
      *
-     * @param rotationSpeed the speed at which the robot is trying to rotate
-     * @return the corrected rotation speed
+     * @param rotationSpeed
+     * @return
      */
-    private double getRotationCorrection(double rotationSpeed) {
+    private double getRotationPID(double rotationSpeed) {
         if (gyroEnabled) {
             // If the controller is already enabled, check to see if it should
             // be disabled or kept running. Otherwise check to see if it needs
             // to be enabled.
-            if (headingNetworkEnabled) {
+            if (headingPIDController.isEnable()) {
                 // If the rotation rate is greater than the deadband disable the
-                // heading controller. Otherwise, return the latest value from
-                // the controller.
+                // PID controller. Otherwise, return the latest value from the
+                // controller.
                 if (Math.abs(rotationSpeed) >= ROTATION_DEADBAND) {
-                    headingNetworkEnabled = false;
+                    headingPIDController.disable();
                 } else {
-                    if (headingNetworkTrainingEnabled) {
-                        headingNetworkOutputNeuron.setOutputValue(getHeadingError());
-                        headingNetwork.backPropagation(headingNetworkSetpoint);
-                    }
-                    headingNetwork.feedForward(headingNetworkSetpoint, 1.0);
-                    return headingNetworkRotationSpeedNeuron.getOutputValue();
+                    return headingPID;
                 }
             } else {
                 // If the rotation rate is less than the deadband, turn on the
                 // PID controller and set its setpoint to the current angle.
                 if (Math.abs(rotationSpeed) < ROTATION_DEADBAND) {
                     headingOffset = getHeading();
-                    headingNetworkSetpoint = headingOffset;
-                    headingNetworkEnabled = true;
+                    headingPIDController.setSetpoint(headingOffset);
+                    headingPID = 0;
+                    headingPIDController.enable();
                 }
             }
         }
@@ -388,26 +353,40 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     }
 
     /**
-     * Resets the robot's gyro value to zero. This is usually called on command,
-     * or after the robot has been disabled to get rid of drift.
+     * Resets the robot's gyro value to zero and resets the PID controller
+     * error. This is usually called on command, or after the robot has been
+     * disabled to get rid of drift.
      */
     public void resetGyro() {
         // Reset the gyro value to zero
         gyro.reset();
         // Reset the integral component to zero (which also disables the
         // controller). This is very important because the integral value will
-        headingNetworkSetpoint = 0;
+        // have gotten really big and will cause the robot to spin in circles
+        // unless it is reset.
+        headingPIDController.reset();
+        // Since the gyro value is now zero, the robot should also try to point
+        // in that direction.
+        headingPIDController.setSetpoint(0);
+        // Reset the output to 0.
+        headingPID = 0;
+        // Re-enable the controller because it was disabled by calling reset().
+        headingPIDController.enable();
     }
 
+    /**
+     * Resets the setpoint of the heading PID controller to the current heading.
+     */
     public void resetSetpoint() {
-        headingNetworkSetpoint = getHeading();
+        headingPIDController.setSetpoint(getHeading());
+        headingPID = 0;
     }
 
     /**
      * Gets the heading of the robot in radians according to the gyro. This also
      * inverts the value if necessary. This *must* be used to retrieve the gyro
      * heading rather than calling {@link Gyro#getAngle()} to prevent race
-     * conditions.
+     * conditions with the {@link PIDController}.
      * 
      * @return the heading
      */
@@ -432,39 +411,17 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
         resetSetpoint();
     }
 
+    /**
+     * Gets the rate of rotation of the robot in radians per second according to
+     * the gyro. This also inverts the value if necessary. This *must* be used
+     * to retrieve the rotation rate rather than calling {@link Gyro#getRate(s)}
+     * to prevent race conditions with the {@link PIDController}.
+     * 
+     * @return the heading
+     */
     public double getRotationRate() {
         synchronized (this) {
             return gyro.getRate() * headingInverted;
-        }
-    }
-
-    /**
-     * Sets whether the neural network should train itself.
-     * 
-     * @param enabled whether training should be enabled
-     */
-    public void setTrainingEnabled(boolean enabled) {
-        headingNetworkTrainingEnabled = enabled;
-    }
-
-    /**
-     * Gets whether neural network training is enabled.
-     * 
-     * @return true if the network is enabled
-     */
-    public boolean isTrainingEnabled() {
-        return headingNetworkTrainingEnabled;
-    }
-
-    /**
-     * Saves the state of the neural network. This should be called whenever
-     * training finishes.
-     */
-    public void saveTraining() {
-        try {
-            headingNetworkData.save(new File(HEADING_NETWORK_PATH));
-        } catch (IOException e) {
-            System.err.println("Unable to save heading network training data.");
         }
     }
 
@@ -495,8 +452,8 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
      * @return true if the robot is on target
      */
     public boolean isHeadingOnTarget() {
-        if (headingNetworkEnabled) {
-            return Math.abs(getHeadingError()) < headingTolerance;
+        if (headingPIDController.isEnable()) {
+            return headingPIDController.onTarget();
         } else {
             return true;
         }
@@ -524,15 +481,6 @@ public class GyroMecanumDriveAlgorithm<S extends WheelController<?>> extends Mec
     }
 
     public double getHeadingError() {
-        return headingNetworkSetpoint - getHeading();
-    }
-
-    /**
-     * Gets the most recent back-propagation error from the neural network.
-     * 
-     * @return the back-propagation error
-     */
-    public double getBackPropagationError() {
-        return headingNetwork.getRecentAverageError();
+        return headingPIDController.getError();
     }
 }

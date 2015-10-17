@@ -16,8 +16,7 @@ public class NormalDriveCommandGroup extends CommandGroup {
 
     public NormalDriveCommandGroup() {
         // Enable gyro
-        // TODO: change back to true when neural network works
-        addSequential(new SetGyroEnabledCommand(false));
+        addSequential(new SetGyroEnabledCommand(true));
         // Enable encoders
         addSequential(new SetEncodersEnabledCommand(false));
         // Start field oriented mecanum drive control

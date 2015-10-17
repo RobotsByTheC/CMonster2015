@@ -65,8 +65,9 @@ public class DriveHeadingCommand extends RotateToCommand {
      * @param heading the heading
      * @param time the amount of time to drive
      */
-    public DriveHeadingCommand(double x, double y, double driveTime, double heading, double maxRotationSpeed, double timeout) {
-        this(x, y, heading, driveTime, maxRotationSpeed, timeout, false, false);
+    public DriveHeadingCommand(double x, double y, double driveTime, double heading,
+            double maxRotationSpeed, double timeout) {
+        this(x, y, heading, driveTime, maxRotationSpeed, timeout, false);
     }
 
     /**
@@ -80,8 +81,9 @@ public class DriveHeadingCommand extends RotateToCommand {
      * @param time the amount of time to drive
      * @param debug whether to print the heading error
      */
-    public DriveHeadingCommand(double x, double y, double driveTime, double heading, double maxRotationSpeed, double timeout, boolean debug, boolean train) {
-        super(heading, maxRotationSpeed, timeout, debug, train);
+    public DriveHeadingCommand(double x, double y, double driveTime, double heading,
+            double maxRotationSpeed, double timeout, boolean debug) {
+        super(heading, maxRotationSpeed, timeout, debug);
 
         addNumberParameter(X_KEY, x);
         addNumberParameter(Y_KEY, y);
@@ -123,9 +125,11 @@ public class DriveHeadingCommand extends RotateToCommand {
             dX = 0;
             dY = 0;
         }
-        RobotMap.driveSubsystemMecanumDriveAlgorithm.driveFieldHeadingCartesian(dX, dY, heading, rotationRamper.process(maxRotationSpeed));
+        RobotMap.driveSubsystemMecanumDriveAlgorithm.driveFieldHeadingCartesian(dX, dY, heading,
+                rotationRamper.process(maxRotationSpeed));
         if (debug) {
-            SmartDashboard.putNumber(HEADING_ERROR_KEY, RobotMap.driveSubsystemMecanumDriveAlgorithm.getHeadingError());
+            SmartDashboard.putNumber(HEADING_ERROR_KEY,
+                    RobotMap.driveSubsystemMecanumDriveAlgorithm.getHeadingError());
         }
     }
 }
