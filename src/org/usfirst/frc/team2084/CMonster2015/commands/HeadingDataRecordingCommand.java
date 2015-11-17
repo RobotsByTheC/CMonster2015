@@ -6,6 +6,8 @@
  */
 package org.usfirst.frc.team2084.CMonster2015.commands;
 
+import java.io.IOException;
+
 import org.usfirst.frc.team2084.CMonster2015.Robot;
 import org.usfirst.frc.team2084.CMonster2015.RobotMap;
 
@@ -30,7 +32,13 @@ public class HeadingDataRecordingCommand extends DataRecordingCommand {
         double output = Robot.oi.getDriveJoystick().getX();
 
         RobotMap.driveSubsystemArcadeDriveAlgorithm.arcadeDrive(0, output);
-        writeData(Double.toString(RobotMap.driveSubsystemGyro.getAngle()), Double.toString(output));
+        try {
+            writeData(Double.toString(RobotMap.driveSubsystemGyro.getAngle()),
+                    Double.toString(RobotMap.driveSubsystemGyro.getRate()),
+                    Double.toString(output));
+        } catch (IOException ex) {
+            System.err.println("Could not write data:" + ex);
+        }
     }
 
     @Override

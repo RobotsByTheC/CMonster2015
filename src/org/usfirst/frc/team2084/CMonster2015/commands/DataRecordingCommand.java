@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj.command.Command;
  */
 public abstract class DataRecordingCommand extends Command {
 
-    public static final String DATA_PATH = "/home/lvuser/recorded-data";
+    public static final String DATA_PATH = "/home/lvuser/recorded-data/";
 
     private static final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SS");
 
@@ -33,7 +33,7 @@ public abstract class DataRecordingCommand extends Command {
 
     public DataRecordingCommand(String dataName) {
         this.dataName = dataName;
-        dataDirectory = new File(dataName);
+        dataDirectory = new File(DATA_PATH + dataName);
         if (dataDirectory.exists()) {
             if (!dataDirectory.isDirectory()) {
                 throw new IllegalArgumentException("Data name cannot be the name of an existing file in "
@@ -60,7 +60,7 @@ public abstract class DataRecordingCommand extends Command {
         }
     }
 
-    protected void writeData(String... data) {
+    protected void writeData(String... data) throws IOException {
         if (writer != null) {
             StringBuilder line = new StringBuilder(data[0]);
             for (int i = 1; i < data.length; i++) {
@@ -70,7 +70,7 @@ public abstract class DataRecordingCommand extends Command {
             line.append('\n');
 
             ByteBuffer buffer = ByteBuffer.wrap(line.toString().getBytes());
-            writer.write(buffer, 0);
+            writer.write(buffer, writer.size());
         }
     }
 
