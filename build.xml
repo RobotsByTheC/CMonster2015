@@ -25,13 +25,9 @@
 	<property file="build.properties" />
 	<property file="${user.home}/wpilib/java/${version}/ant/build.properties" />
 
-	<import file="../VisionProcessor2015/build-jar.xml"/>
-	<target name="compile" depends="vision-jar, athena-project-build.compile"/>
+	<target name="compile" depends="athena-project-build.compile"/>
 	
 	
 	<import file="${wpilib.ant.dir}/build.xml" />
-
-	<!-- Append our vision processing code to the classpath -->
-	<var name="classpath" value="${classpath}:../VisionProcessor2015/dist/VisionProcessor2015.jar:../VisionProcessor2015/lib/opencv-2410.jar" />
 
 </project>
